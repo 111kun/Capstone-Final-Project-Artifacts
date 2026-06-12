@@ -1,0 +1,48 @@
+{{- if .Values.autoReIndex.enable -}}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: indexer-reindex
+spec:
+  concurrencyPolicy: Forbid
+  schedule: {{ .Values.autoReIndex.schedule | quote }}
+  failedJobsHistoryLimit: 1
+  successfulJobsHistoryLimit: 1
+  startingDeadlineSeconds: 120
+  jobTemplate:
+    spec:
+      backoffLimit: 3
+      completions: 1
+      parallelism: 1
+      template:
+        metadata:
+          name: indexer-reindex
+          labels:
+            cron: indexer-reindex
+        spec:
+          {{- include "magda.imagePullSecrets" (dict "image" .Values.reindexJobImage) | indent 10 }}
+          containers:
+          - name: indexer-reindex
+            image: {{ include "magda.image" (dict "image" .Values.reindexJobImage) | quote }}
+            imagePullPolicy: {{ include "magda.imagePullPolicy" (dict "image" .Values.reindexJobImage) | quote }}
+            command:
+              - "/bin/sh"
+              - "-c"
+              - "mkdir /workdir && cp /trigger-script/* /workdir/ && cd /workdir && yarn install && node index.js"
+            env:
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-secrets
+                  key: jwt-secret
+            - name: USER_ID
+              value: {{ .Values.global.defaultAdminUserId }}
+            volumeMounts:
+            - name: trigger-script
+              mountPath: /trigger-script
+          restartPolicy: OnFailure
+          volumes:
+          - name: trigger-script
+            configMap:
+              name: indexer-reindex-trigger-script
+{{- end }}

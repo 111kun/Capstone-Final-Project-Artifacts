@@ -1,0 +1,18 @@
+image: 
+  name: "magda-apidocs-server"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 10Mi
+  limits:
+    cpu: 20m

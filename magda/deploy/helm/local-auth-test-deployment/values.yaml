@@ -1,0 +1,37 @@
+global:
+  externalUrl: http://minikube.data.gov.au:30100
+  rollingUpdate:
+    maxUnavailable: 1
+  exposeNodePorts: true
+  image:
+    repository: "registry.gitlab.com/magda-data/magda"
+    pullSecrets: "regcred"
+    pullPolicy: Always
+  useCloudSql: false
+  useCombinedDb: true
+  enablePriorityClass: false
+  openfaas:
+    enabled: false
+
+tags:
+  all: false
+  combined-db: true
+  authorization-db: true
+  registry-db: true
+  opa: true
+  authorization-api: true
+
+magda-core:
+  authorization-api:
+    opa:
+      customPolicyConfigMaps:
+      - test-opa-policies
+  combined-db:
+    magda-postgres:
+      postgresql:
+        image:
+          registry: "registry.gitlab.com"
+          repository: "magda-data/magda/magda-postgres"
+          pullPolicy: "Always"
+          pullSecrets: 
+            - "regcred"

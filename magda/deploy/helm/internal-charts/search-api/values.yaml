@@ -1,0 +1,142 @@
+image: 
+  name: "magda-search-api"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+autoPingJobImage: 
+  name: "node"
+  repository: "docker.io"
+  tag: "22-alpine"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+autoPing:
+  # -- Whether turn on the cronjob to auto ping search api.
+  # see https://github.com/magda-io/magda/issues/3576 for more details
+  enable: true
+  # -- auto ping cronjob schedule string. specified using unix-cron format (in UTC timezone by default).
+  # @default -- "*/9 * * * *": run every 9 mins
+  schedule: "*/9 * * * *"
+
+livenessProbe:
+  httpGet:
+    path: /v0/status/live
+    port: 6102
+  initialDelaySeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 5
+  failureThreshold: 10
+  successThreshold: 1
+
+readinessProbe:
+  httpGet:
+    path: /v0/status/ready
+    port: 6102
+  initialDelaySeconds: 10
+  periodSeconds: 20
+  timeoutSeconds: 10
+  failureThreshold: 10
+  successThreshold: 1
+
+autoscaler:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+resources:
+  requests:
+    cpu: 50m
+    memory: 300Mi
+  limits:
+    memory: 1.5Gi
+
+# -- (string) Sets the maximum amount of memory that the JVM heap (via flag `-Xmx`) can grow to.
+# You can set `jvmInitialHeapSize` to the same value for production use case to avoid JVM heap resizing.
+# Should make sure leave enough room for non-heap overhead to avoid OOM.
+# e.g. if you set `resources.limits.memory` (Pod Memory) to 256 MiB, you should set this value to 128 MiB to leave 128 MiB for non-heap overhead to avoid OOM.
+# - For Pod memory 512 MiB, we should set this value to 256 MiB.
+# - 768 MiB Pod memory, should set this value to 512 MiB.
+# - Over 1GiB Pod memory, can reserve 60-70% to heap.
+# value should be in format of `1g` or `200m` etc.
+jvmMaxHeapSize: 1g
+
+# -- (string) Sets the initial size of the heap (via flag `-Xms`) when the JVM starts
+# For production, should probably set to same as `jvmMaxHeapSize` for more predictable performance. 
+# By default, will use JVM default value.
+# value should be in format of `1g` or `200m` etc.
+jvmInitialHeapSize: 
+
+# -- (float) JVM max allowed heap memory percentage based on `resources.limits.memory`
+# This value will only be used if `jvmMaxHeapSize` is not set.
+# For small pods (e.g. under 1 GiB - specified by the `resources.limits.memory`), better to use `jvmMaxHeapSize` to make sure leave enough room for non-heap overhead to avoid OOM.
+jvmMaxRamPercentage: 70.0
+
+# -- (float) JVM initial heap memory percentage
+# This value will only be used if `jvmInitialHeapSize` is not set.
+# By default, will use JVM default value.
+jvmInitialRamPercentage: 
+
+# -- (float) JVM min heap memory percentage
+# This value will only be used if `jvmInitialHeapSize` is not set.
+# If the InitialRAMPercentage result is less than MinRAMPercentage, the JVM increases it to match MinRAMPercentage.
+# By default, will use JVM default value.
+jvmMinRamPercentage:
+
+# -- whether to print out JVM flags at application starting up
+# This is useful for debugging purpose, e.g. to check if the JVM heap size is set correctly from printed values like InitialHeapSize and MaxHeapSize.
+jvmPrintFlagsFinal: false
+
+# -- when set to true, search API will print verbose debug info (e.g. ES DSL query) to log
+debug: false
+
+# -- Manually set dataset index version.
+# If not specify, default version will be used.
+# you want to manually set this setting when upgrade to a Magda version that involves dataset index version changes.
+# As it takes time to rebuild the index, you could use this setting to make search API query existing old version index before the new version index is built.
+datasetsIndexVersion:
+
+# -- Manually set region index version.
+# If not specify, default version will be used.
+# you want to manually set this setting when upgrade to a Magda version that involves region index version changes.
+# As it takes time to rebuild the index, you could use this setting to make search API query existing old version index before the new version index is built.
+regionsIndexVersion:
+
+
+# -- Manually set publisher index version.
+# If not specify, default version will be used.
+# you want to manually set this setting when upgrade to a Magda version that involves region index version changes.
+# As it takes time to rebuild the index, you could use this setting to make search API query existing old version index before the new version index is built.
+publishersIndexVersion:
+
+# -- Manually set format index version.
+# If not specify, default version will be used.
+# you want to manually set this setting when upgrade to a Magda version that involves region index version changes.
+# As it takes time to rebuild the index, you could use this setting to make search API query existing old version index before the new version index is built.
+formatsIndexVersion:
+
+# -- application config. Allow to configure any application config fields.
+# For all available configuration fields and their default values, please refer to [application.conf](https://github.com/magda-io/magda/blob/main/magda-search-api/src/main/resources/application.conf)
+# and [common.conf](https://github.com/magda-io/magda/blob/main/magda-scala-common/src/main/resources/common.conf) (e.g. for Hybrid search related config)
+# This config field is available since v2.2.5
+# Although can be set via `.Values.appConfig` as well, the following config fields will override the config set via `.Values.appConfig`:
+# `.Values.debug`, `.Values.datasetsIndexVersion`, `.Values.regionsIndexVersion`, `.Values.publishersIndexVersion`, `.Values.formatsIndexVersion`,
+appConfig:
+  http: 
+    port: 6102
+  elasticSearch:
+    serverUrl: http://opensearch:9200
+  authApi:
+    baseUrl: http://authorization-api
+  embeddingApi:
+    baseUrl: http://magda-embedding-api
+  # -- whether print out full config data at application starting up
+  # for debug purpose only
+  printFullConfig: false
+

@@ -1,0 +1,27 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: authorization-db-migrator
+  labels:
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "-5"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: {{ .Values.migratorBackoffLimit | default 6 }}
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      name: "authorization-db-migrator"
+    spec:
+      restartPolicy: OnFailure
+      {{- include "magda.imagePullSecrets" . | indent 6 }}
+      containers:
+      - name: authorization-db-migrator
+        image: {{ include "magda.image" . | quote }}
+        imagePullPolicy: {{ include "magda.imagePullPolicy" . | quote }}
+        env:
+        - name: DB_HOST
+          value: authorization-db
+        {{- include "magda.postgres-migrator-env" . | indent 8 }}

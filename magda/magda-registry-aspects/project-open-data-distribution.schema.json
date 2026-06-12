@@ -1,0 +1,11 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "title": "Project Open Data Distribution Aspect",
+    "description": "Aspect capturing a complete representation of a distribution according to Project Open Data (data.json).",
+    "type": "object",
+    "allOf": [
+        {
+            "$ref": "https://project-open-data.cio.gov/v1.1/schema/distribution.json"
+        }
+    ]
+}

@@ -1,0 +1,87 @@
+{{- if .Values.global.useCloudSql }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-sql-proxy
+spec:
+# when autoscaler is on, we shouldn't set value for replicas
+{{- if empty .Values.autoscaler.enabled }}
+  replicas: {{ .Values.replicas | default 1 }}
+{{- end }}
+  strategy:
+    rollingUpdate:
+      maxUnavailable: {{ .Values.global.rollingUpdate.maxUnavailable | default 0 }}
+  selector:
+    matchLabels:
+      service: cloud-sql-proxy
+  template:
+    metadata:
+      labels:
+        service: cloud-sql-proxy
+      annotations:
+         "cluster-autoscaler.kubernetes.io/safe-to-evict": "true"
+    spec:
+{{- if .Values.serviceAccountName }}
+      serviceAccountName: {{ .Values.serviceAccountName | quote }}
+{{- end }}
+{{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1") .Values.global.enablePriorityClass }}
+      priorityClassName: magda-9
+{{- end }}
+      {{- include "magda.imagePullSecrets" . | indent 6 }}
+      containers:
+      - name: cloud-sql-proxy
+        ports:
+        - containerPort: 5432
+          name: db
+          protocol: TCP
+        image: {{ include "magda.image" . | quote }}
+        imagePullPolicy: {{ include "magda.imagePullPolicy" . | quote }}
+        command: 
+          - "/cloud_sql_proxy"
+          - "-instances={{ .Values.instanceConnectionName }}=tcp:0.0.0.0:5432"
+{{- if .Values.enableIamLogin }}
+          - "-enable_iam_login"
+{{- end }}
+{{- if .Values.maxConnections }}
+          - "-max_connections={{ .Values.maxConnections }}"
+{{- end }}
+{{- if .Values.ipAddressTypes }}
+          - "-ip_address_types={{ .Values.ipAddressTypes }}"
+{{- end }}
+{{- if .Values.termTimeout }}
+          - "-term_timeout={{ .Values.termTimeout }}s"
+{{- end }}
+{{- if .Values.skipFailedInstanceConfig }}
+          - "-skip_failed_instance_config={{ .Values.skipFailedInstanceConfig }}"
+{{- end }}
+{{- if .Values.logDebugStdout }}
+          - "-log_debug_stdout={{ .Values.logDebugStdout }}"
+{{- end }}
+{{- if .Values.structuredLogs }}
+          - "-structured_logs={{ .Values.structuredLogs }}"
+{{- end }}
+{{- if empty .Values.enableIamLogin }}
+          - "-credential_file=/secrets/cloudsql/credentials.json"
+{{- end }}
+{{- if .Values.global.enableLivenessProbes }}
+        livenessProbe:
+          exec:
+            command: ["nc", "-z", "127.0.0.1", "5432"]
+{{- end }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+{{- if empty .Values.enableIamLogin }}
+        volumeMounts:
+        - name: cloudsql-instance-credentials
+          mountPath: /secrets/cloudsql
+          readOnly: true
+{{- end }}
+      volumes:
+{{- if empty .Values.enableIamLogin }}
+      - name: cloudsql-instance-credentials
+        secret:
+          secretName: cloudsql-instance-credentials
+{{- end }}
+      - name: cloudsql
+        emptyDir:
+{{- end }}

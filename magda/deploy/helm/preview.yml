@@ -1,0 +1,195 @@
+global:
+  rollingUpdate:
+    maxUnavailable: 1000
+  image:
+    repository: "registry.gitlab.com/magda-data/magda"
+    pullSecrets: "regcred"
+    pullPolicy: Always
+  exposeNodePorts: false
+  enablePriorityClass: false
+  defaultContactEmail: "magda-test@googlegroups.com"
+  enableMultiTenants: false
+  enableLivenessProbes: true
+  searchEngine:
+    hybridSearch:
+      enabled: true
+
+tags:
+  all: true
+  correspondence-api: true
+  ingress: true
+  priorities: false
+  connectors: true
+
+magda:
+  openfaas:
+    operator: 
+      createCRD: false
+  magda-core:
+    ingress:
+      ingressClass: nginx
+      enableTls: true
+      clientBodyBufferSize: 500M
+      proxyBodySize: 500M
+    gateway:
+      enableAuthEndpoint: true
+      enableHttpsRedirection: false # -- for cloudflare free plan issue in our dev env
+      authPlugins:
+      - key: google
+        baseUrl: http://magda-auth-google
+      - key: internal
+        baseUrl: http://magda-auth-internal
+      - key: arcgis
+        baseUrl: http://magda-auth-arcgis
+      - key: facebook
+        baseUrl: http://magda-auth-facebook
+      autoscaler:
+        enabled: false
+      cors:
+        credentials: true
+        origin: true
+      cookie:
+        sameSite: "none"
+      helmet:
+        crossOriginResourcePolicy:
+          policy: "cross-origin"
+        contentSecurityPolicy:
+          directives:
+            scriptSrc:
+            - "'self'"
+            - https://*.googletagmanager.com
+            # the following two domains are for downloading Magda UI plugins from github release
+            - github.com
+            - objects.githubusercontent.com
+            imgSrc:
+            - "'self'"
+            - "data:"
+            - https://*.googletagmanager.com
+            - https://*.google-analytics.com
+            # for display google user avatar
+            - https://*.googleusercontent.com
+            # metadata editor map display
+            - https://*.tile.openstreetmap.org
+            - https://*.basemaps.cartocdn.com
+            connectSrc:
+            - "'self'"
+            - https://tiles.magda.io
+            - https://*.google-analytics.com
+            - https://*.analytics.google.com
+            - https://*.googletagmanager.com
+
+    combined-db:
+      magda-postgres:
+        backupRestore:
+          storageSecretName: backup-storage-account
+          storageConfig:
+            WALG_GS_PREFIX: "gs://magda-postgres-backups-asia/dev"
+          recoveryMode: 
+            enabled: true
+        postgresql:
+          image: 
+            registry: "registry.gitlab.com"
+            repository: "magda-data/magda/magda-postgres"
+            pullPolicy: "Always"
+            pullSecrets: 
+              - "regcred"
+          primary:
+            extraVolumes:
+              - name: storage-account
+                secret:
+                  secretName: backup-storage-account
+            extraVolumeMounts:
+              - name: storage-account
+                mountPath: /etc/wal-g.d/env
+          persistence:
+            size: "250Gi"
+          resources:
+            limits:
+              cpu: 2000m
+
+    registry-api:
+      autoscaler:
+        ## whether to enable autoscaling
+        enabled: true
+        ## The minimum number of replicas to have
+        minReplicas: 1
+        ## The maximum number of replicas to have
+        maxReplicas: 2
+      deployments:
+        readOnly:
+          enable: true
+
+    indexer:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 256Mi
+
+    web-server:
+      fallbackUrl: "https://data.gov.au"
+      featureFlags:
+        cataloguing: true
+        publishToDga: false
+        datasetApprovalWorkflowOn: false
+        useStorageApi: true
+      vocabularyApiEndpoints:
+        - "https://vocabs.ands.org.au/repository/api/lda/abares/australian-land-use-and-management-classification/version-8/concept.json"
+        - "https://vocabs.ands.org.au/repository/api/lda/neii/australian-landscape-water-balance/version-1/concept.json"
+        - "https://vocabs.ands.org.au/repository/api/lda/ands-nc/controlled-vocabulary-for-resource-type-genres/version-1-1/concept.json"
+      showContactButtonForNoContactPointDataset: true
+      externalUIComponents:
+      - "https://github.com/magda-io/magda-ui-plugin-component-dap-image-gallery/releases/download/v1.0.0/DAPImageGallery.js"
+      - "https://github.com/magda-io/magda-ui-plugin-component-open-3d-dataset/releases/download/v2.0.0/Open3dDatasetSection.js"
+      extraConfigData:
+        "3dDatasetDigitalTwinInstances":
+        - sourceDataDomain: "nsw.gov.au"
+          url: "https://nsw.digitaltwin.terria.io/"
+      llmExtensionInstallationUrl: https://chromewebstore.google.com/detail/magda-llm-service-worker/ljadmjdilnpmlhopijgimonfackfngmi
+      enableChatbot: true
+      gapiIds:
+        - G-3LGQ7FWH1B
+
+    preview-map:
+      serverConfig:
+        allowProxyFor:
+        - nicta.com.au
+        - gov.au
+        - csiro.au
+        - arcgis.com
+        - argo.jcommops.org
+        - www.abc.net.au
+        - geoserver.aurin.org.au
+        - mapsengine.google.com
+        - s3-ap-southeast-2.amazonaws.com
+        - adelaidecitycouncil.com
+        - www.dptiapps.com.au
+        - geoserver-123.aodn.org.au
+        - geoserver.imos.org.au
+        - nci.org.au
+        - static.nationalmap.nicta.com.au
+        - githubusercontent.com
+        - gov
+        - gov.uk
+        - gov.nz
+        - sample.aero3dpro.com.au
+        - maps.eatlas.org.au
+
+    correspondence-api:
+      alwaysSendToDefaultRecipient: true
+      smtpHostname: "smtp.mailgun.org"
+      smtpPort: 2525
+
+    storage-api:
+      minio:
+        host: "localhost"
+        port: 9000
+
+# auth plugin for google
+magda-auth-google:
+  googleClientId: "569942545102-7nu303pchs9n2vlgl435trcb6vr51ged.apps.googleusercontent.com"
+
+magda-auth-arcgis:
+  arcgisClientId: "d0MgVUbbg5Z6vmWo"
+
+magda-auth-facebook:
+  clientId: "173073926555600"

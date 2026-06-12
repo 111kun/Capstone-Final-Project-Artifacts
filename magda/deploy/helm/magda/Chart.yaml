@@ -1,0 +1,86 @@
+apiVersion: v2
+name: "magda"
+description: "A complete solution for managing, publishing and discovering
+  government data, private and open. This chart includes the magda default
+  deployment."
+version: "5.6.0"
+home: "https://github.com/magda-io/magda"
+sources: [ "https://github.com/magda-io/magda" ]
+dependencies:
+  - name: magda-core
+    version: "5.6.0"
+    repository: file://../magda-core
+
+  - name: openfaas
+    version: "5.5.5-magda.3"
+    repository: "oci://ghcr.io/magda-io/charts"
+    # Users should turn on / off openfaas via this condition var `global.openfaas.enabled` rather than `tags`
+    # Due to a limitation of helm, the value of tags is not available in chart template.
+    # All openfaas dependents should check this field to decide deployment logic (`tags` unfortunately not available to ).
+    # They choose to simply not deploy or prompt an error message via [helm required function](https://helm.sh/docs/howto/charts_tips_and_tricks/#know-your-template-functions)
+    condition: global.openfaas.enabled
+
+  # magda-core chart is always enabled.
+  # Thus, no tags or condition are required.
+  # You should set its sub-chart to enabled or not.
+  - name: magda-function-history-report
+    version: "2.0.0"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - all
+      - magda-function-history-report
+
+  - name: magda-minion-broken-link
+    alias: minion-broken-link
+    version: "3.0.0"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - minions
+      - minion-broken-link
+
+  - name: magda-minion-format
+    alias: minion-format
+    version: "2.0.1"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - minions
+      - minion-format
+
+  - name: magda-minion-linked-data-rating
+    alias: minion-linked-data-rating
+    version: "2.0.0"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - minions
+      - minion-linked-data-rating
+
+  - name: magda-minion-visualization
+    alias: minion-visualization
+    version: "2.0.0"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - minions
+      - minion-visualization
+
+  - name: magda-minion-ckan-exporter
+    version: "2.0.0"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - minion-ckan-exporter
+
+  - name: magda-ckan-connector
+    version: "2.0.0"
+    alias: ckan-connector-functions
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - all
+      - url-processors
+      - ckan-connector-functions
+
+  - name: magda-function-esri-url-processor
+    version: "2.0.0"
+    repository: "oci://ghcr.io/magda-io/charts"
+    tags:
+      - all
+      - url-processors
+      - magda-function-esri-url-processor

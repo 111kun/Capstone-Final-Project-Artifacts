@@ -1,0 +1,106 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: indexer
+spec:
+  replicas: 1
+  strategy:
+    rollingUpdate:
+      maxUnavailable: {{ .Values.global.rollingUpdate.maxUnavailable | default 0 }}
+  selector:
+    matchLabels:
+      service: indexer
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "magda.indexer.appConfig" . | sha256sum | quote }}
+      labels:
+        service: indexer
+    spec:
+{{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1") .Values.global.enablePriorityClass }}
+      priorityClassName: magda-7
+{{- end }}
+      {{- include "magda.imagePullSecrets" . | indent 6 }}
+      containers:
+      - name: indexer
+        env:
+        - name: S3_SECRET_KEY
+          value: dummy
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: auth-secrets
+              key: jwt-secret
+{{- if .Values.global.enableLivenessProbes }}
+        livenessProbe:
+          httpGet:
+            path: /v0/status/live
+            port: 6103
+          initialDelaySeconds: 120
+          periodSeconds: 10
+          timeoutSeconds: 10
+{{- end }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        image: {{ include "magda.image" . | quote }}
+        imagePullPolicy: {{ include "magda.imagePullPolicy" . | quote }}
+        ports:
+        - containerPort: 6103
+        command: 
+        - "bin/magda-indexer"
+{{- if not (empty .Values.jvmInitialHeapSize) }}
+        - "-J-Xms{{ .Values.jvmInitialHeapSize }}"
+{{- end }}
+{{- if not (empty .Values.jvmMaxHeapSize) }}
+        - "-J-Xmx{{ .Values.jvmMaxHeapSize }}"
+{{- end }}
+{{- if and (empty .Values.jvmMaxHeapSize) .Values.jvmMaxRamPercentage }}
+        - "-J-XX:MaxRAMPercentage={{ .Values.jvmMaxRamPercentage | printf "%.2f" }}"
+{{- end }}
+{{- if and (empty .Values.jvmInitialHeapSize) .Values.jvmInitialRamPercentage }}
+        - "-J-XX:InitialRAMPercentage={{ .Values.jvmInitialRamPercentage | printf "%.2f" }}"
+{{- end }}
+{{- if and (empty .Values.jvmInitialHeapSize) .Values.jvmMinRamPercentage }}
+        - "-J-XX:MinRAMPercentage={{ .Values.jvmMinRamPercentage | printf "%.2f" }}"
+{{- end }}
+{{- if .Values.jvmPrintFlagsFinal }}
+        - "-J-XX:+PrintFlagsFinal"
+{{- end }}
+        - "-Dconfig.file=/etc/config/deploy-application.conf"
+{{- if hasKey .Values.elasticsearch "readSnapshots" }}
+        - "-Dindexer.readSnapshots={{ .Values.readSnapshots }}"
+{{- end }}
+{{- if hasKey .Values.elasticsearch "makeSnapshots" }}
+        - "-Dindexer.makeSnapshots={{ .Values.makeSnapshots }}"
+{{- end }}
+{{- if .Values.elasticsearch.useGcsSnapshots }}
+        - "-DelasticSearch.snapshotRepo.type=gcs"
+        - "-DelasticSearch.snapshotRepo.types.gcs.bucket={{ .Values.elasticsearch.gcsSnapshotBucket }}"
+        - "-DelasticSearch.snapshotRepo.types.gcs.client={{ .Values.elasticsearch.gcsSnapshotClient }}"
+{{- end }}
+{{- if hasKey (get .Values "elasticsearch" | default dict) "shards" }}
+        - "-DelasticSearch.shardCount={{ .Values.elasticsearch.shards }}"
+{{- end }}
+{{- if hasKey (get .Values "elasticsearch" | default dict) "replicas" }}
+        - "-DelasticSearch.replicaCount={{ .Values.elasticsearch.replicas }}"
+{{- end }}
+{{- $akkaVal := (get .Values "akka") | default dict }}
+{{- if (dig "http" "server" "requestTimeout" false $akkaVal) | empty | not }}
+        - "-Dakka.http.server.request-timeout={{ .Values.akka.http.server.requestTimeout }}"
+{{- end }}
+{{- if (dig "http" "server" "idleTimeout" false $akkaVal) | empty | not }}
+        - "-Dakka.http.server.idle-timeout={{ .Values.akka.http.server.idleTimeout }}"
+{{- end }}
+        - "-Dauth.userId={{ .Values.global.defaultAdminUserId | required ".global.defaultAdminUserId is required" }}"
+        volumeMounts:
+        - mountPath: /usr/regions
+          name: regions
+        - name: app-config-volume
+          mountPath: /etc/config
+      volumes:
+      - name: regions
+        hostPath:
+          path: /var/regions
+      - name: app-config-volume
+        configMap:
+          name: indexer-app-conf

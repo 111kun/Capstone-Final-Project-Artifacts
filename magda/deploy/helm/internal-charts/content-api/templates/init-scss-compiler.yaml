@@ -1,0 +1,47 @@
+{{- if .Values.enableScssCompilerJob }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: init-scss-compiler
+  labels:
+  annotations:
+    "helm.sh/hook": post-install,post-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": hook-succeeded,before-hook-creation
+spec:
+  backoffLimit: {{ .Values.initScssCompilerBackoffLimit | default 6 }}
+  completions: 1
+  parallelism: 1
+  template:
+    metadata:
+      name: "init-scss-compiler"
+    spec:
+      restartPolicy: OnFailure
+      {{- $imageEnv := omit . "Values" }}
+      {{- $_ := set $imageEnv "Values" (omit .Values "image") }}
+      {{- $_ := set $imageEnv.Values "image" .Values.scssCompilerImage }}
+      {{- include "magda.imagePullSecrets" $imageEnv | indent 6 }}
+      containers:
+      - name: init-scss-compiler
+        image: {{ include "magda.image" $imageEnv | quote }}
+        imagePullPolicy: {{ include "magda.imagePullPolicy" $imageEnv | quote }}
+        command: [
+            "node",
+            "/usr/src/app/component/dist/index.js"
+        ]
+        env:
+        - name: CONTENT_API_URL
+          value: "http://content-api/v0"
+        - name: USER_ID
+          value: {{ .Values.global.defaultAdminUserId }}
+        - name: SCSS_VARS
+          valueFrom:
+            configMapKeyRef:
+              name: scss-compiler-config
+              key: scssVars
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: auth-secrets
+              key: jwt-secret
+{{- end }}

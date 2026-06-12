@@ -1,0 +1,139 @@
+global: {}
+image: 
+  name: "magda-registry-api"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+# -- (string) Sets the maximum amount of memory that the JVM heap (via flag `-Xmx`) can grow to.
+# You can set `jvmInitialHeapSize` to the same value for production use case to avoid JVM heap resizing.
+# Should make sure leave enough room for non-heap overhead to avoid OOM.
+# e.g. if you set `resources.limits.memory` (Pod Memory) to 256 MiB, you should set this value to 128 MiB to leave 128 MiB for non-heap overhead to avoid OOM.
+# - For Pod memory 512 MiB, we should set this value to 256 MiB.
+# - 768 MiB Pod memory, should set this value to 512 MiB.
+# - Over 1GiB Pod memory, can reserve 60-70% to heap.
+# value should be in format of `1g` or `200m` etc.
+jvmMaxHeapSize: 1g
+
+# -- (string) Sets the initial size of the heap (via flag `-Xms`) when the JVM starts
+# For production, should probably set to same as `jvmMaxHeapSize` for more predictable performance. 
+# By default, will use JVM default value.
+# value should be in format of `1g` or `200m` etc.
+jvmInitialHeapSize: 
+
+# -- (float) JVM max allowed heap memory percentage based on `resources.limits.memory`
+# This value will only be used if `jvmMaxHeapSize` is not set.
+# For small pods (e.g. under 1 GiB - specified by the `resources.limits.memory`), better to use `jvmMaxHeapSize` to make sure leave enough room for non-heap overhead to avoid OOM.
+jvmMaxRamPercentage: 70.0
+
+# -- (float) JVM initial heap memory percentage
+# This value will only be used if `jvmInitialHeapSize` is not set.
+# By default, will use JVM default value.
+jvmInitialRamPercentage: 
+
+# -- (float) JVM min heap memory percentage
+# This value will only be used if `jvmInitialHeapSize` is not set.
+# If the InitialRAMPercentage result is less than MinRAMPercentage, the JVM increases it to match MinRAMPercentage.
+# By default, will use JVM default value.
+jvmMinRamPercentage:
+
+# -- whether to print out JVM flags at application starting up
+# This is useful for debugging purpose, e.g. to check if the JVM heap size is set correctly from printed values like InitialHeapSize and MaxHeapSize.
+jvmPrintFlagsFinal: false
+
+# autoscaler is only for readonly instance
+autoscaler:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+livenessProbe: {}
+resources: 
+  requests:
+    cpu: 250m
+    memory: 500Mi
+  limits:
+    memory: 1.5Gi
+deployments:
+  # -- deployment config for full registry instance.
+  # You can also specify different `resources` config under this key.
+  full:
+    replicas: 1
+
+    # -- Default request timeout for full instance
+    requestTimeout: 60s
+
+    # -- Default idle timeout for full instance.
+    # Make sure `idleTimeout` is longer than `requestTimeout`
+    idleTimeout: 60s
+  
+  # -- deployment config for readonly registry instances.
+  # You can also specify different `resources` config under this key.
+  readOnly:
+    enable: false
+    # -- no. of replicates. Its value must no lower than `minReplicas`
+    replicas: 1
+
+    # -- Default request timeout for readonly instance
+    requestTimeout: 60s
+
+    # -- Default idle timeout for readonly instance.
+    # Make sure `idleTimeout` is longer than `requestTimeout`
+    idleTimeout: 60s
+
+aspectDefinitionMigrator:
+  enabled: true
+  backoffLimit: 6
+  image: 
+    name: magda-migrator-registry-aspects
+    # repository: 
+    # tag: 
+    # pullPolicy: 
+    # pullSecrets: 
+
+# -- application config. Allow to configure any application config fields.
+# For all available configuration fields and their default values, please refer to [application.conf](https://github.com/magda-io/magda/blob/main/magda-registry-api/src/main/resources/application.conf)
+# This config field is available since v2.2.5
+# Previous versions supported config fields: `.Values.validateJsonSchema`, `.Values.db.poolInitialSize`, `.Values.db.poolMaxSize` and 
+# `.Values.db.poolConnectionTimeoutMillis` are still supported for backward compatible reason (although deprecated).
+# When exist, values from those obsolete config fields will override relevant fields in `.Values.appConfig`.
+# Obsolete config fields: `.Values.logLevel`, `.Values.skipAuthorization` and `.Values.printSQlInConsole` are not supported anymore.
+# Please config using alternative fields via `.Values.appConfig` instead.
+appConfig:
+  http: 
+    port: 6101
+  db:
+    default:
+      url: jdbc:postgresql://registry-db/postgres
+  authApi:
+    baseUrl: http://authorization-api
+  scalikejdbc:
+    global:
+      loggingSQLAndTime:
+        # -- Whether print all SQL in console. For DEBUG only
+        enabled: false
+  authorization:
+    # -- Skip asking authorization decisions from policy engine.
+    # `UnconditionalTrueDecision` will be always returned for this case
+    # Useful when running locally - DO NOT TURN ON IN PRODUCTION 
+    skipOpaQuery: false
+  # -- Whether registry api should validate incoming JSON data
+  validateJsonSchema: true
+  # -- whether print out full config data at application starting up
+  # for debug purpose only
+  printFullConfig: false
+  webhooks:
+    # -- WebHook event notification request stream processing timeout
+    # you might want to increase this value to allow longer processing time for sync webhooks
+    # you will also want to adjust `akka.http.client.idle-timeout` to match this value
+    requestStreamTimeout: 120s
+  akka:
+    http:
+      client:
+        idle-timeout: 120s

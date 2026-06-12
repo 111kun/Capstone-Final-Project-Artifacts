@@ -1,0 +1,53 @@
+@import "variables";
+@import "./pancake/sass/core.scss";
+.pagination {
+    margin: 48px 0 0 0;
+
+    .pagination-list {
+        display: flex;
+        flex-flow: row wrap;
+        justify-content: center;
+        margin-bottom: 24px;
+        padding-left: 0;
+        list-style: none;
+
+        a {
+            display: flex;
+            height: 46px;
+            min-width: 46px;
+            padding: 0px;
+            align-items: center;
+            justify-content: center;
+
+            border-radius: $AU-border-radius;
+            text-decoration: none;
+            @include AU-fontgrid(xs);
+            border: 3px solid $AU-color-foreground-action;
+            &:hover,
+            &:focus {
+                background: $AU-colordark-foreground-text;
+            }
+            &.current {
+                background-color: $AU-colordark-background;
+                color: $AU-colordark-foreground-text;
+                border: 3px solid $AU-colordark-background;
+            }
+        }
+
+        li + li {
+            @include AU-space(margin-left, 0.75unit);
+
+            @include AU-media(xs) {
+                @include AU-space(margin-left, 1.25unit);
+            }
+        }
+    }
+    .pagination-summary {
+        color: #6f777b;
+        font-size: 14px;
+        line-height: 16px;
+        text-align: center;
+        @include AU-space(margin-top, 3unit);
+        margin-bottom: 8px;
+    }
+}

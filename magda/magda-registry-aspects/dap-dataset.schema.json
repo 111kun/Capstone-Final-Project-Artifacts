@@ -1,0 +1,6 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "title": "DAP Dataset Aspect",
+    "description": "Aspect capturing a complete representation of a dataset according to DAP",
+    "type": "object"
+}

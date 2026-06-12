@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: storage-api
+spec:
+  replicas: {{ .Values.replicas | default 1 }}
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: {{ .Values.global.rollingUpdate.maxUnavailable | default 0 }}
+  selector:
+    matchLabels:
+      service: storage-api
+  template:
+    metadata:
+      labels:
+        service: storage-api
+    spec:
+{{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1") .Values.global.enablePriorityClass }}
+      priorityClassName: magda-8
+{{- end }}
+      {{- include "magda.imagePullSecrets" . | indent 6 }}
+      containers:
+      - name: storage-api
+        image: {{ include "magda.image" . | quote }}
+        imagePullPolicy: {{ include "magda.imagePullPolicy" . | quote }}
+        command: [
+            "node",
+            "/usr/src/app/component/dist/index.js",
+            "--listenPort", {{ .Values.listenPort | quote }},
+            "--minioEnableSSL", {{ .Values.minioEnableSSL | quote }},
+            {{- $minioCfg := set dict "Values" .Values.minio }}
+            "--minioHost", {{ template "minio.fullname" $minioCfg }},
+            "--minioPort", {{ .Values.minio.port | default 9000 | quote }},
+{{- if .Values.minioRegion }}
+            "--minioRegion", {{ .Values.minioRegion | quote }},
+{{- end }}
+{{- if .Values.skipAuth }}
+            "--skipAuth", "true",
+{{- end }}
+            "--authApiUrl", {{ .Values.authApiUrl | quote }},
+            "--tenantId", {{ .Values.tenantId | quote }},
+            "--uploadLimit", {{ .Values.uploadLimit | quote }},
+            "--registryApiUrl", {{ .Values.registryApiUrl | quote }},
+{{- if .Values.defaultBuckets }}
+            "--defaultBuckets", {{ range .Values.defaultBuckets }} {{ . | quote }},  {{- end }}
+{{- else }}
+            "--defaultBuckets", {{ .Values.global.defaultDatasetBucket | quote }},
+{{- end }}
+            "--autoCreateBuckets", {{ .Values.autoCreateBuckets | quote }}
+        ]
+        env:
+        - name: MINIO_SECRET_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storage-secrets
+              key: secretkey
+        - name: MINIO_ACCESS_KEY
+          valueFrom:
+            secretKeyRef:
+              name: storage-secrets
+              key: accesskey
+        - name: USER_ID
+          value: {{ .Values.global.defaultAdminUserId }}
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: auth-secrets
+              key: jwt-secret
+
+{{- if .Values.global.enableLivenessProbes }}
+        livenessProbe:
+          httpGet:
+            path: /v0/status/live
+            port: {{ .Values.listenPort }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /v0/status/ready
+            port: {{ .Values.listenPort }}
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 10
+{{- end }}

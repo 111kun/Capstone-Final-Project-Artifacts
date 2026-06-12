@@ -1,0 +1,38 @@
+.setting-page-main-container.users-page {
+    .search-button-container {
+        position: relative;
+        height: 42px;
+        .search-button-inner-wrapper {
+            position: absolute;
+            right: 5px;
+            width: 250px;
+            svg {
+                width: 24px;
+                height: 24px;
+            }
+        }
+    }
+    .pagination-container {
+        padding: 20px;
+    }
+    .action-col {
+        text-align: center;
+        .rs-btn-icon.rs-btn {
+            padding-top: 7px;
+            padding-bottom: 6px;
+        }
+        .rs-btn {
+            padding-top: 5px;
+            padding-bottom: 5px;
+        }
+    }
+}
+
+.user-datagrid-action-dropdown {
+    .rs-dropdown-item {
+        svg {
+            margin-right: 8px;
+            margin-top: 2px;
+        }
+    }
+}

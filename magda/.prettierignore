@@ -1,0 +1,10 @@
+deploy
+magda-web-client/src/pancake
+magda-web-client/public/assets/libs/*
+!magda-web-client/public/assets/libs/
+!magda-web-client/public/assets/libs/alasqlUtlis.js
+.gitlab-ci.yml
+.travis.yml
+*.html
+packages/external-ui-plugin-sdk/docs
+magda-web-client/public/magda-eval/**/*.jsonl

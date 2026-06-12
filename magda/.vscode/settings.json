@@ -1,0 +1,15 @@
+{
+    "typescript.tsdk": "node_modules/typescript/lib",
+    "files.exclude": {
+        "**/node_modules": true,
+        "**/bin": true,
+        "magda-web-client/**/*.css": true
+    },
+    "eslint.enable": true,
+    "files.associations": {
+        "*.json": "jsonc"
+    },
+    "files.watcherExclude": {
+        "**/target": true
+    }
+}

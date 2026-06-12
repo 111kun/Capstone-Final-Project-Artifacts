@@ -1,0 +1,72 @@
+.DS_Store
+*.class
+*.log
+.classpath
+.metadata
+
+# sbt specific
+.cache
+.cache-main
+.history
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# Scala-IDE specific
+.scala_dependencies
+.worksheet
+.settings
+bin
+.project
+
+# IntelliJ specific
+.idea
+
+# VS Code
+.bloop
+.metals
+metals.sbt
+
+regions
+snapshots
+.cache-tests
+node_modules/
+dist/
+
+package-lock.json
+*/package-lock.json
+.nyc_*
+
+# docker specific
+docker-context-*/
+
+#tenant-api specific
+magda-tenant-api/lib/
+
+#typescript
+tsconfig.tsbuildinfo
+
+# Helm chart installations
+deploy/helm/magda/charts/
+deploy/helm/magda-core/charts/
+deploy/helm/internal-charts/storage-api/charts/
+deploy/helm/internal-charts/magda-postgres/charts/
+deploy/helm/internal-charts/combined-db/charts/
+deploy/helm/internal-charts/authorization-db/charts/
+deploy/helm/internal-charts/content-db/charts/
+deploy/helm/internal-charts/registry-db/charts/
+deploy/helm/internal-charts/session-db/charts/
+deploy/helm/internal-charts/tenant-db/charts/
+deploy/helm/local-deployment/charts/
+deploy/helm/local-auth-test-deployment/charts/
+magda-web-client/public/assets/libs/polyfills.min.js
+magda-web-client/public/assets/libs/fetchWithCache.min.js
+
+*/coverage/tmp/*
+
+sbt-cache/
+.worktrees/

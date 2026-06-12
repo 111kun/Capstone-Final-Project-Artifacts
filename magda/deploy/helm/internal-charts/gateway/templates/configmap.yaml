@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: "gateway-config"
+  labels:
+    pod: "gateway"
+data:
+  # When the config map is mounted as a volume, these will be created as files.
+  {{- $runtimeRoutes := dict }}
+  {{- if .Values.additionalRoutes | empty | not }}
+  {{- $runtimeRoutes = mergeOverwrite (deepCopy .Values.defaultRoutes) .Values.additionalRoutes }}
+  {{- else }}
+  {{- $runtimeRoutes = .Values.routes | default .Values.defaultRoutes }}
+  {{- end }}
+  routes.json: {{ $runtimeRoutes | mustToRawJson | quote }}
+  webRoutes.json: {{ .Values.webRoutes | default dict | mustToRawJson | quote }}
+  helmet.json: {{ .Values.helmet | default dict | mustToRawJson | quote }}
+  helmetPerPath.json: {{ .Values.helmetPerPath | default dict | mustToRawJson | quote }}
+  cors.json: {{ .Values.cors | default dict | mustToRawJson | quote }}
+  csp.json: {{ .Values.csp | default dict | mustToRawJson | quote }}
+  cookie.json: {{ .Values.cookie | default dict | mustToRawJson | quote }}
+  authPlugins.json: {{ .Values.authPlugins | default list | mustToRawJson | quote }}
+  defaultWebRouteConfig.json: {{ .Values.defaultWebRouteConfig | default dict | mustToRawJson | quote }}
+

@@ -1,0 +1,252 @@
+image: 
+  name: "magda-gateway"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+service:
+  type: NodePort
+  externalPort: 80
+  internalPort: 80
+
+autoscaler:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 3
+  targetCPUUtilizationPercentage: 80
+
+# -- whether or not enable auth endpoint.
+# You can turn it off if you don't need to log into any account.
+enableAuthEndpoint: true
+
+# -- wether or not enable http basic auth access control.
+# `username` & `password` will be retrieved from k8s secrets `web-access-secret`, `username` & `password` fields.
+enableWebAccessControl: false
+
+# -- wether or not enable CKAN redirection.
+# when it's on, any incoming ckan alike URL will be redirected to the CKAN instance URL 
+# that is specified by config option `ckanRedirectionDomain` and `ckanRedirectionPath`.
+enableCkanRedirection: false
+
+# -- (number) The standard ttl as number in seconds for every generated cache element in the registryQueryCache.
+# To disable the cache, set this value to `0`.
+# By default, it will be set to 600 seconds if leave blank.
+registryQueryCacheStdTTL:
+
+# -- (number) Specifies a maximum amount of keys that can be stored in the registryQueryCache.
+# By default, it will be set to 500 seconds if leave blank.
+registryQueryCacheMaxKeys:
+
+# -- CKAN redirection target CKAN instance domain (e.g. `data.gov.au`). See `enableCkanRedirection` for more details.
+ckanRedirectionDomain:
+
+# -- CKAN redirection target CKAN instance path (e.g. `/data`). See `enableCkanRedirection` for more details.
+ckanRedirectionPath:
+
+
+# -- whether or not redirect incoming request using HTTP protocol to HTTPs
+enableHttpsRedirection: false
+
+# -- By default, response will be auto-gizpped depends on MIME type. Set this to true to disable it.
+disableGzip: false
+
+# -- a list of authentication plugin config item. 
+# Each authentication plugin config item can contain the following fields:
+# <ul>
+# <li>`key`: (string) the unique key of the auth plugin. Allowed characters: [a-zA-Z0-9\-] </li>
+# <li>`baseUrl`: (string) the `baseUrl` where gateway proxy request to. </li>
+# </ul>
+# More info on authentication plugin see [Authentication Plugin Specification](https://github.com/magda-io/magda/blob/master/docs/docs/authentication-plugin-spec.md)
+authPlugins: []
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 40Mi
+  limits:
+    cpu: 200m
+
+# -- routes list here are available under `/api/v0/` path.
+# If empty, the value of `defaultRoutes` will be used. See below.
+# @default -- {}
+routes: {}
+
+# -- a list of additional routes that should be avaialble under `/api/v0/` path.
+# Different from `routes` config field, routes supplied via this field will merge with `defaultRoutes` (default system API routes).
+# Therefore, users doesn't have to specify all default system API routes in this field in order to keep all system API routes working.
+# When users supply value via this config field, any value supplied via `routes` field will be ignored.
+# @default -- {}
+additionalRoutes: {}
+
+# -- Default routes list here are available under `/api/v0/` path.
+# See [Proxy Target Definition](#proxy-target-definition) section below for route format.
+# @default -- Default value see [defaultRoutes Default Value](#default-value-for-defaultroutes-field) section below
+defaultRoutes:
+  search:
+    to: http://search-api/v0
+    auth: true
+  "registry/hooks":
+    to: http://registry-api/v0/hooks
+    auth: true
+  registry:
+    to: http://registry-api/v0
+    methods:
+    - method: get
+      target: http://registry-api-read-only/v0
+    - method: head
+      target: http://registry-api-read-only/v0
+    - method: options
+      target: http://registry-api-read-only/v0
+    - method: post
+      target: http://registry-api/v0
+    - method: put
+      target: http://registry-api/v0
+    - method: patch
+      target: http://registry-api/v0
+    - method: delete
+      target: http://registry-api/v0
+    auth: true
+  registry-read-only:
+    to: http://registry-api-read-only/v0
+    auth: true
+  registry-auth: #left here for legacy reasons - use /registry
+    to: http://registry-api/v0
+    auth: true
+  auth:
+    to: http://authorization-api/v0/public
+    auth: true
+  opa:
+    to: http://authorization-api/v0/opa
+    auth: true
+    statusCheck: false
+  admin:
+    to: http://admin-api/v0
+    auth: true
+  content:
+    to: http://content-api/v0
+    auth: true
+  storage:
+    to: http://storage-api/v0
+    auth: true
+  correspondence:
+    to: http://correspondence-api/v0/public
+  apidocs:
+    to: http://apidocs-server/
+    redirectTrailingSlash: true
+  tenant:
+    to: http://tenant-api/v0
+    auth: true
+  "indexer/reindex":
+    to: http://indexer/v0/reindex
+    auth: true
+  "indexer/dataset":
+    to: http://indexer/v0/dataset
+    auth: true
+
+# -- extra web routes.
+# See [Proxy Target Definition](#proxy-target-definition) section below for route format.
+webRoutes:
+  preview-map: http://preview-map:6110
+
+# web -- Default web route. 
+# This is the last route of the proxy.
+# Main UI should be served from here.
+web: http://web
+
+defaultWebRouteConfig:
+  # -- the default web router proxy target. Optional.
+  # If set, the default web route set via `web` option will be ignored.
+  to: ""
+  # -- array of string. "all" means all methods will be proxied 
+  methods: 
+  - "GET"
+  # -- whether this target requires session. Otherwise, session / password related midddleware won't run
+  auth: false
+  # -- make /xxx auto redirect to /xxxx/
+  redirectTrailingSlash: false
+
+# -- Helmet config options. See https://www.npmjs.com/package/helmet
+# Since Magda v5, you should supply content security policy config via `contentSecurityPolicy` key here.
+# A separate `csp` config section for content security policy is deprecated and will be removed in future.
+# You should review the default config values here and [helmet default settings](https://github.com/helmetjs/helmet?tab=readme-ov-file#reference)
+# to determine whether you need to change the settings here.
+helmet:
+  xFrameOptions: false
+  originAgentCluster: false
+  referrerPolicy:
+    policy: strict-origin-when-cross-origin
+  strictTransportSecurity: false
+  xContentTypeOptions: false
+  xDnsPrefetchControl: false
+  xDownloadOptions: false
+  xPermittedCrossDomainPolicies: false
+  contentSecurityPolicy:
+    directives:
+      defaultSrc: null
+      fontSrc: null
+      imgSrc: null
+      scriptSrcAttr: null
+      styleSrc: null
+      scriptSrc:
+      - "'self'"
+      workerSrc:
+      - "'self'"
+      - "blob:"
+
+# -- Allow optionally to set different helmet config per request path.
+# e.g. you can specify different config for path `/routeA/abc` with:
+# helmetPerPath:
+#   "/routeA/abc": 
+#     referrerPolicy:
+#       policy: strict-origin-when-cross-origin
+helmetPerPath: {}
+
+# -- Since Magda v5, the content security policy config section here is deprecated.
+# You should set `content security policy` config via the `contentSecurityPolicy` key of the `helmet` config section.
+# This config section is still supported for backwards compatibility reasons and will be removed in future.
+# The config supplied here will override the config supplied via `helmet.contentSecurityPolicy.directives`.
+csp: {}
+
+cors:
+  exposedHeaders:
+  - "Content-Range"
+  - "X-Content-Range"
+  - "Accept-Ranges"
+  - "Content-Length"
+  - "x-magda-event-id"
+
+# -- Session cookie settings. <br/>
+# More info: https://github.com/expressjs/session#cookie <br/>
+# Supported options are:<br/>
+# <ul>
+# <li>`expires`: A fix cookie expire date. The expires option should not be set directly; instead only use the maxAge option.</li>
+# <li>`httpOnly`: Default: true.</li>
+# <li>`maxAge`: Default: 7 * 60 * 60 * 1000 (7 hours)</li>
+# <li>`path`: Default: '/'.</li>
+# <li>`sameSite`: Default: lax </li>
+# <li>`secure`: Default: true </li>
+# </ul>
+# @default -- default value see `Description`
+cookie:
+  maxAge: 25200000
+  httpOnly: true
+  sameSite: "lax"
+  secure: true
+
+# defaultCacheControl -- If a response that goes through the gateway doesn't set Cache-Control, it'll be set to this value. Set to null to disable.
+defaultCacheControl: "public, max-age=60"
+
+# proxyTimeout -- (int) How long time (in seconds) before upstream service must complete request in order to avoid request timeout error.
+# If not set, the request will time out after 120 seconds.
+# @default -- nil (120 seconds default value will be used by upstream lib internally)
+proxyTimeout: 
+
+# -- when set to true, API will not query policy engine for auth decision but assume it's always permitted. 
+# It's for debugging only.
+skipAuth: false

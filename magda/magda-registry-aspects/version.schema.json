@@ -1,0 +1,59 @@
+{
+    "$schema": "http://json-schema.org/schema#",
+    "title": "Record Version Aspect",
+    "description": "Provides version information of a dataset or distribution record. Verison should be bumped up when key event (e.g. current distribution is replaced by an new one or other key milestone) happens.",
+    "type": "object",
+    "properties": {
+        "currentVersionNumber": {
+            "type": "number",
+            "description": "current version number",
+            "minimum": 0
+        },
+        "versions": {
+            "type": "array",
+            "description": "all existing versions for the record (including the current version)",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "versionNumber": {
+                        "type": "number",
+                        "description": "version number of the version"
+                    },
+                    "createTime": {
+                        "type": "string",
+                        "description": "creation time of the version (ISO8601 format)",
+                        "format": "date-time"
+                    },
+                    "creatorId": {
+                        "type": "string",
+                        "description": "the ID of the user who created the version."
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "the text description of the version"
+                    },
+                    "title": {
+                        "type": "string",
+                        "description": "the title / name of the record at the time when the version is created"
+                    },
+                    "eventId": {
+                        "type": "number",
+                        "description": "the id of the event that this verion points to. With the event ID, you can the record data of the version from `time travel` API. It's an optional field and an frontend feature for tagging versions. Event id can be retrieved from any registry update/patch APIs `x-magda-event-id` response header."
+                    },
+                    "internalDataFileUrl": {
+                        "type": "string",
+                        "description": "Optional; Only available if this version is for a distribution record and its data file is stored with internal storage. We need to keep track of all files kept in internal storage for all versions of the distribution record. Although,it's possible to trackt them through time travel API, a seperate field here is much easier to implement."
+                    }
+                },
+                "required": [
+                    "versionNumber",
+                    "createTime",
+                    "description",
+                    "title"
+                ]
+            },
+            "minItems": 1
+        }
+    },
+    "required": ["currentVersionNumber", "versions"]
+}

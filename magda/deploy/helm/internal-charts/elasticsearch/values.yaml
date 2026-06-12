@@ -1,0 +1,58 @@
+production: false
+
+initContainerImage:
+  name: busybox
+  repository: docker.io
+  tag: "latest"
+  pullPolicy: IfNotPresent
+
+kibanaImage:
+  name: kibana-oss
+  repository: docker.elastic.co/kibana
+  tag: "6.8.22"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+image: 
+  name: "magda-elasticsearch"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+client:
+  pluginsInstall: ""
+  heapSize: "256m"
+  replicas: 1
+  resources:
+    requests:
+      cpu: 50m
+      memory: 500Mi
+    limits:
+      cpu: 100m
+data:
+  storage: 50Gi
+  pluginsInstall: ""
+  heapSize: "256m"
+  resources:
+    requests:
+      cpu: 200m
+      memory: 500Mi
+    limits:
+      cpu: 500m
+master:
+  replicas: 3
+  pluginsInstall: ""
+  resources:
+    requests:
+      cpu: 50m
+      memory: 900Mi
+    limits:
+      cpu: 100m
+backup:
+  googleApplicationCreds: {}

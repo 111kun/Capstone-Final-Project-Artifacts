@@ -1,0 +1,5 @@
+* text=auto
+*.sh text eol=lf
+CHANGES.md merge=union
+magda-elastic-search/*.pl linguist-vendored
+*.json  linguist-language=JSON-with-Comments

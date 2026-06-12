@@ -1,0 +1,125 @@
+image: 
+  name: "magda-indexer"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+reindexJobImage: 
+  name: "node"
+  repository: "docker.io"
+  tag: "22-alpine"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+  
+resources:
+  requests:
+    cpu: 100m
+    memory: 250Mi
+  limits:
+    cpu: 1200m
+    memory: 1500Mi
+
+# -- (string) Sets the maximum amount of memory that the JVM heap (via flag `-Xmx`) can grow to.
+# You can set `jvmInitialHeapSize` to the same value for production use case to avoid JVM heap resizing.
+# Should make sure leave enough room for non-heap overhead to avoid OOM.
+# e.g. if you set `resources.limits.memory` (Pod Memory) to 256 MiB, you should set this value to 128 MiB to leave 128 MiB for non-heap overhead to avoid OOM.
+# - For Pod memory 512 MiB, we should set this value to 256 MiB.
+# - 768 MiB Pod memory, should set this value to 512 MiB.
+# - Over 1GiB Pod memory, can reserve 60-70% to heap.
+# value should be in format of `1g` or `200m` etc.
+jvmMaxHeapSize: 1g
+
+# -- (string) Sets the initial size of the heap (via flag `-Xms`) when the JVM starts
+# For production, should probably set to same as `jvmMaxHeapSize` for more predictable performance. 
+# By default, will use JVM default value.
+# value should be in format of `1g` or `200m` etc.
+jvmInitialHeapSize: 
+
+# -- (float) JVM max allowed heap memory percentage based on `resources.limits.memory`
+# This value will only be used if `jvmMaxHeapSize` is not set.
+# For small pods (e.g. under 1 GiB - specified by the `resources.limits.memory`), better to use `jvmMaxHeapSize` to make sure leave enough room for non-heap overhead to avoid OOM.
+jvmMaxRamPercentage: 70.0
+
+# -- (float) JVM initial heap memory percentage
+# This value will only be used if `jvmInitialHeapSize` is not set.
+# By default, will use JVM default value.
+jvmInitialRamPercentage: 
+
+# -- (float) JVM min heap memory percentage
+# This value will only be used if `jvmInitialHeapSize` is not set.
+# If the InitialRAMPercentage result is less than MinRAMPercentage, the JVM increases it to match MinRAMPercentage.
+# By default, will use JVM default value.
+jvmMinRamPercentage:
+
+# -- whether to print out JVM flags at application starting up
+# This is useful for debugging purpose, e.g. to check if the JVM heap size is set correctly from printed values like InitialHeapSize and MaxHeapSize.
+jvmPrintFlagsFinal: false
+
+elasticsearch:
+  useGcsSnapshots: false
+
+autoReIndex:
+  # -- Whether turn on the cronjob to trigger reindex.
+  # `publisher` & `format` indices might contains obsolete records which require the triming / reindex process to be removed.
+  enable: true
+  # -- auto reindex cronjob schedule string. specified using unix-cron format (in UTC timezone by default).
+  # @default -- "0 15 * * 0": 15:00PM UTC timezone (1:00AM in AEST Sydney timezone) on every Sunday
+  schedule: "0 15 * * 0"
+
+# -- application config. Allow to configure any application config fields.
+# For all available configuration fields and their default values, please refer to [application.conf](https://github.com/magda-io/magda/blob/main/magda-indexer/src/main/resources/application.conf)
+# and [common.conf](https://github.com/magda-io/magda/blob/main/magda-scala-common/src/main/resources/common.conf) (e.g. for Hybrid search related config)
+# This config field is available since v2.2.5
+# Previous versions' obsolete are still supported for backward compatible reason
+appConfig:
+  http: 
+    port: 6103
+  elasticSearch:
+    serverUrl: http://opensearch:9200
+    shards: 1
+    replicas: 0
+  authApi:
+    baseUrl: http://authorization-api
+  embeddingApi:
+    baseUrl: http://magda-embedding-api
+  registry:
+    baseUrl: http://registry-api
+    readOnlyBaseUrl: http://registry-api-read-only
+    webhookUrl: http://indexer/v0/registry-hook
+  indexer:
+    readSnapshots: false
+    makeSnapshots: false
+  akka:
+    http:
+      server:
+        # -- Defines the default time period within which the application has to
+        # produce an HttpResponse for any given HttpRequest it received.
+        # The timeout begins to run when the *end* of the request has been
+        # received, so even potentially long uploads can have a short timeout.
+        # Set to `infinite` to completely disable request timeout checking.
+        #
+        # Make sure this timeout is smaller than the idle-timeout, otherwise,
+        # the idle-timeout will kick in first and reset the TCP connection
+        # without a response.
+        #
+        # If this setting is not `infinite` the HTTP server layer attaches a
+        # `Timeout-Access` header to the request, which enables programmatic
+        # customization of the timeout period and timeout response for each
+        # request individually.
+        request-timeout: 90s
+        # -- The time after which an idle connection will be automatically closed.
+        # Set to `infinite` to completely disable idle connection timeouts.
+        idle-timeout: 120s
+  # -- whether print out full config data at application starting up
+  # for debug purpose only
+  printFullConfig: false
+  regionLoader:
+    # -- (int) how many region source file (supplied via config) are allowed to be processed in parallel.
+    # Higher number will make the initial region indexing task complete faster but require much more memory.
+    fileProcessingParallelism: 1

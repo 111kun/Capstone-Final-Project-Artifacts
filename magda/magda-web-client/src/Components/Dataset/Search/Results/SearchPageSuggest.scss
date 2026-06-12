@@ -1,0 +1,44 @@
+.suggest-dataset-text {
+    font-weight: 500;
+    padding-bottom: 20px;
+}
+
+.suggest-dataset-button {
+    font-size: 1.25rem;
+    line-height: 1.2;
+    font-weight: 500;
+    padding: 0;
+}
+
+.suggest-dataset-icon {
+    vertical-align: middle;
+    &:hover {
+        cursor: pointer;
+    }
+}
+
+.suggest-dataset-div {
+    padding: 4px;
+    position: relative;
+
+    & a:hover {
+        cursor: pointer;
+    }
+
+    .correspondence-alert {
+        width: 100%;
+        padding-right: 5px;
+    }
+}
+
+.correspondence-search-close-button {
+    height: 2em;
+    width: 2em;
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    z-index: 1;
+    &:hover {
+        cursor: pointer;
+    }
+}

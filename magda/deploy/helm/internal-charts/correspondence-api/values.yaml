@@ -1,0 +1,22 @@
+image: 
+  name: "magda-correspondence-api"
+  # repository: 
+  # tag: 
+  # pullPolicy: 
+  # pullSecrets: 
+
+defaultImage:
+  repository: "ghcr.io/magda-io"
+  pullPolicy: IfNotPresent
+  pullSecrets: false
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 60Mi
+  limits:
+    cpu: 50m
+smtpPort: 587
+smtpHostname: "example.com"
+defaultRecipient: "mail@example.com"
+alwaysSendToDefaultRecipient: false

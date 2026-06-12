@@ -1,0 +1,355 @@
+@import "variables";
+@import "./pancake/sass/pancake.scss";
+
+body {
+    overflow-y: scroll;
+    min-width: $minimum;
+}
+* {
+    box-sizing: border-box;
+}
+
+//need to add these classes for modals as well
+form > input,
+textarea {
+    &:focus {
+        outline-color: $AU-colordark-foreground-focus !important;
+    }
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    border: 0;
+}
+
+.au-body.au-body--dark {
+    border-color: $AU-colordark-foreground-focus !important;
+    background: $AU-colordark-background !important;
+    color: $AU-colordark-foreground-text !important;
+    a,
+    button {
+        color: $AU-colordark-foreground-action !important;
+        &:hover,
+        &:focus {
+            color: $AU-colordark-foreground-focus !important;
+        }
+    }
+}
+
+.au-footer.au-footer--dark {
+    border-color: $footer-color-border !important;
+    background: $footer-color-background !important;
+    color: $footer-color-text !important;
+    a,
+    button {
+        color: $footer-color-action !important;
+        &:hover,
+        &:focus {
+            color: $footer-color-focus !important;
+        }
+    }
+}
+
+@keyframes hideMessage {
+    0% {
+        opacity: 1;
+    }
+    90% {
+        opacity: 1;
+    }
+    100% {
+        opacity: 0;
+    }
+}
+
+button {
+    background: transparent;
+}
+
+.breadcrumb {
+    margin-left: 0;
+    padding-left: 0;
+    .breadcrumb-item {
+        display: inline-block;
+        padding-right: 16px;
+    }
+}
+
+.tab-navigation {
+    .au-link-list {
+        display: flex;
+    }
+
+    a {
+        display: inline-block;
+        padding: 1rem 1rem;
+        border-bottom: 5px solid #cfcfcf;
+        &:hover,
+        &:focus {
+            text-decoration: underline;
+            color: $AU-color-foreground-action;
+        }
+    }
+    a.mainmenu--active {
+        color: $AU-color-foreground-action;
+        border-color: $AU-color-foreground-action;
+    }
+}
+
+.hidden-sm {
+    @media (max-width: $medium) {
+        display: none !important;
+    }
+}
+
+.au-btn + .au-btn {
+    margin-left: 0;
+}
+
+.list--unstyled {
+    padding-left: 0;
+    list-style: none;
+}
+
+// gold starts here
+
+h1 {
+    font-size: 28px;
+    font-weight: 300;
+    margin-bottom: 16px;
+}
+
+h2 {
+    font-size: 1.5rem;
+    line-height: 1.33333;
+    font-weight: 400;
+}
+
+h3 {
+    @include AU-fontgrid(md, heading);
+    font-weight: 400;
+}
+
+h4 {
+    @include AU-fontgrid(sm, heading);
+    font-weight: 400;
+}
+
+.au-text-input,
+.au-text-input--block {
+    border: 3px solid $AU-color-foreground-action;
+    max-width: 480px !important;
+}
+
+.au-body ::selection {
+    background: $AU-color-foreground-action !important;
+    color: $AU-colordark-foreground-text !important;
+}
+
+.au-link {
+    background: #ffffff;
+}
+
+.au-skip-link__link {
+    color: $AU-color-background !important;
+}
+
+.ReactModal__Body--open div.au-grid {
+    filter: blur(1.5px);
+}
+
+.au-page-alerts {
+    h3 {
+        margin: 0;
+    }
+    p {
+        margin-top: 0.5rem;
+    }
+}
+
+.url {
+    /* These are technically the same, but use both */
+    overflow-wrap: break-word;
+    word-wrap: break-word;
+
+    -ms-word-break: break-all;
+    /* This is the dangerous one in WebKit, as it breaks things wherever */
+    word-break: break-all;
+    /* Instead use this non-standard one: */
+    word-break: break-word;
+}
+
+/* Double class to get more specificity than the pancake css */
+.au-header.au-header {
+    padding: 0.5rem 0 0.5rem 0;
+}
+
+.navigation .au-link-list > li button {
+    font-size: 1rem;
+    padding: 1rem 0.78rem;
+    line-height: 1.5;
+    display: block;
+    text-decoration: none;
+
+    &:hover {
+        background-color: #341039;
+        color: #fff;
+    }
+}
+
+.link-button {
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: #4c2a85;
+    text-decoration: underline;
+    -webkit-text-decoration-skip: ink;
+    text-decoration-skip-ink: auto;
+
+    &:hover {
+        text-decoration: none;
+    }
+
+    @include AU-focus();
+}
+
+.au-body p {
+    max-width: 100%;
+}
+
+.print-only {
+    display: none;
+}
+
+.au-control-input__text::before,
+.au-control-input__text::after {
+    z-index: 0;
+}
+
+.au-control-input__text::after {
+    z-index: 0;
+}
+
+@media print {
+    .au-breadcrumbs {
+        display: none;
+    }
+
+    .wrapper {
+        display: block !important;
+    }
+
+    a[href]:after {
+        display: none;
+        visibility: hidden;
+        position: absolute;
+    }
+
+    .no-print {
+        display: none !important;
+    }
+
+    .au-body p {
+        max-width: 100% !important;
+    }
+
+    .au-body,
+    .au-body *,
+    p,
+    .markdown {
+        color: black !important;
+        opacity: 1 !important;
+    }
+
+    .container {
+        width: 100% !important;
+    }
+
+    .au-footer {
+        display: none !important;
+    }
+
+    .print-only {
+        display: initial;
+    }
+
+    .col-sm-1,
+    .col-sm-2,
+    .col-sm-3,
+    .col-sm-4,
+    .col-sm-5,
+    .col-sm-6,
+    .col-sm-7,
+    .col-sm-8,
+    .col-sm-11 {
+        width: auto !important;
+    }
+
+    .block {
+        display: block;
+    }
+}
+
+.clearfix:after {
+    content: "";
+    display: table;
+    clear: both;
+}
+
+.tab-collections-container {
+    width: 100%;
+
+    .rs-nav-horizontal {
+        white-space: normal;
+    }
+
+    .rs-nav-item {
+        padding-left: 33px;
+        margin-left: 1px;
+        margin-top: 1px;
+        svg {
+            position: absolute;
+            left: 10px;
+            top: 12px;
+        }
+    }
+
+    .rs-nav-item:not(.rs-nav-item-active) {
+        border: 1px solid var(--rs-navs-tab-border) !important;
+        background-color: var(--rs-bg-card) !important;
+        color: var(--rs-navs-selected) !important;
+    }
+
+    .rs-nav-item.rs-nav-item-active {
+        border: none !important;
+        background-color: var(--rs-navs-bg-hover) !important;
+        color: var(--rs-navs-text-hover) !important;
+    }
+
+    a {
+        text-decoration: none;
+        &:focus {
+            outline: none !important;
+        }
+    }
+
+    .tab-collections-body {
+        border: 1px solid #e7e7e7;
+        border-radius: 3px;
+        padding: 10px;
+    }
+}
+
+.rs-btn-icon-fix {
+    svg {
+        position: absolute;
+        left: 20px;
+        top: 10px;
+    }
+}

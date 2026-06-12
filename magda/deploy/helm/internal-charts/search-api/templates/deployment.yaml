@@ -1,0 +1,88 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: search-api
+spec:
+  replicas: {{ .Values.replicas | default 1 }}
+  strategy:
+    rollingUpdate:
+      maxUnavailable: {{ .Values.global.rollingUpdate.maxUnavailable | default 0 }}
+  selector:
+    matchLabels:
+      service: search-api
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include "magda.search-api.appConfig" . | sha256sum | quote }}
+      labels:
+        service: search-api
+    spec:
+{{- if and (.Capabilities.APIVersions.Has "scheduling.k8s.io/v1") .Values.global.enablePriorityClass }}
+      priorityClassName: magda-8
+{{- end }}
+      {{- include "magda.imagePullSecrets" . | indent 6 }}
+      containers:
+      - name: search-api
+        image: {{ include "magda.image" . | quote }}
+        imagePullPolicy: {{ include "magda.imagePullPolicy" . | quote }}
+        ports:
+        - containerPort: 6102
+        command:
+          - "bin/magda-search-api"
+{{- if not (empty .Values.jvmInitialHeapSize) }}
+          - "-J-Xms{{ .Values.jvmInitialHeapSize }}"
+{{- end }}
+{{- if not (empty .Values.jvmMaxHeapSize) }}
+          - "-J-Xmx{{ .Values.jvmMaxHeapSize }}"
+{{- end }}
+{{- if and (empty .Values.jvmMaxHeapSize) .Values.jvmMaxRamPercentage }}
+          - "-J-XX:MaxRAMPercentage={{ .Values.jvmMaxRamPercentage | printf "%.2f" }}"
+{{- end }}
+{{- if and (empty .Values.jvmInitialHeapSize) .Values.jvmInitialRamPercentage }}
+          - "-J-XX:InitialRAMPercentage={{ .Values.jvmInitialRamPercentage | printf "%.2f" }}"
+{{- end }}
+{{- if and (empty .Values.jvmInitialHeapSize) .Values.jvmMinRamPercentage }}
+          - "-J-XX:MinRAMPercentage={{ .Values.jvmMinRamPercentage | printf "%.2f" }}"
+{{- end }}
+{{- if .Values.jvmPrintFlagsFinal }}
+          - "-J-XX:+PrintFlagsFinal"
+{{- end }}
+          - "-Dconfig.file=/etc/config/deploy-application.conf"
+{{- if .Values.debug }}
+          - "-DsearchApi.debug=true"
+{{- end }}
+{{- if .Values.datasetsIndexVersion }}
+          - "-DelasticSearch.indices.datasets.version={{ .Values.datasetsIndexVersion }}"
+{{- end }}
+{{- if .Values.regionsIndexVersion }}
+          - "-DelasticSearch.indices.regions.version={{ .Values.regionsIndexVersion }}"
+{{- end }}
+{{- if .Values.publishersIndexVersion }}
+          - "-DelasticSearch.indices.publishers.version={{ .Values.publishersIndexVersion }}"
+{{- end }}
+{{- if .Values.formatsIndexVersion }}
+          - "-DelasticSearch.indices.formats.version={{ .Values.formatsIndexVersion }}"
+{{- end }}
+{{- if .Values.readinessProbe }}
+        readinessProbe:
+{{ toYaml .Values.readinessProbe | indent 10 }}
+        {{- end }}
+        {{- if .Values.livenessProbe }}
+        livenessProbe:
+{{ toYaml .Values.livenessProbe | indent 10 }}
+        {{- end }}
+        {{- if semverCompare ">=1.16-0" .Capabilities.KubeVersion.Version }}
+        {{- if .Values.startupProbe }}
+        startupProbe:
+{{ toYaml .Values.startupProbe | indent 10 }}
+        {{- end }}
+        {{- end }}
+        resources:
+{{ toYaml .Values.resources | indent 10 }}
+        volumeMounts:
+        - name: app-config-volume
+          mountPath: /etc/config
+      volumes:
+      - name: app-config-volume
+        configMap:
+          name: search-api-app-conf

@@ -1,0 +1,154 @@
+global:
+  rollingUpdate:
+    maxUnavailable: 1000
+  image:
+    repository: "registry.gitlab.com/magda-data/magda"
+    pullSecrets: "regcred"
+    pullPolicy: Always
+  exposeNodePorts: false
+  enablePriorityClass: false
+  defaultContactEmail: "magda-test@googlegroups.com"
+  enableMultiTenants: true
+
+tags:
+  all: true
+  correspondence-api: true
+  ingress: true
+  priorities: false
+  connectors: false
+
+magda:
+  openfaas:
+    operator: 
+      createCRD: false
+  magda-core:
+    ingress:
+      ingressClass: nginx
+      enableTls: true
+      useDefaultCertificate: true
+      clientBodyBufferSize: 500M
+      proxyBodySize: 500M
+
+    registry-api:
+      skipAuthorization: false
+
+    gateway:
+      ckanRedirectionDomain: "ckan.data.gov.au"
+      ckanRedirectionPath: ""
+      enableCkanRedirection: false
+      enableAuthEndpoint: true
+      enableHttpsRedirection: true
+      authPlugins:
+      - key: google
+        baseUrl: http://magda-auth-google
+      - key: internal
+        baseUrl: http://magda-auth-internal
+      - key: arcgis
+        baseUrl: http://magda-auth-arcgis
+      - key: facebook
+        baseUrl: http://magda-auth-facebook
+      autoscaler:
+        enabled: false
+      cors:
+        credentials: true
+        origin: true
+      cookie:
+        sameSite: "none"
+      helmet:
+        crossOriginResourcePolicy:
+          policy: "cross-origin"
+        contentSecurityPolicy:
+          directives:
+            scriptSrc:
+            - "'self'"
+            - https://*.googletagmanager.com
+            # the following two domains are for downloading Magda UI plugins from github release
+            - github.com
+            - objects.githubusercontent.com
+            imgSrc:
+            - "'self'"
+            - "data:"
+            - https://*.googletagmanager.com
+            - https://*.google-analytics.com
+            # for display google user avatar
+            - https://*.googleusercontent.com
+            # metadata editor map display
+            - https://*.tile.openstreetmap.org
+            connectSrc:
+            - "'self'"
+            - https://tiles.magda.io
+            - https://*.google-analytics.com
+            - https://*.analytics.google.com
+            - https://*.googletagmanager.com
+
+    combined-db:
+      magda-postgres:
+        backupRestore:
+          storageSecretName: backup-storage-account
+          storageConfig:
+            WALG_GS_PREFIX: "gs://magda-postgres-backups-asia/dev"
+          recoveryMode: 
+            enabled: true
+        postgresql:
+          image: 
+            registry: "registry.gitlab.com"
+            repository: "magda-data/magda/magda-postgres"
+            pullPolicy: "Always"
+            pullSecrets: 
+              - "regcred"
+          primary:
+            extraVolumes:
+              - name: storage-account
+                secret:
+                  secretName: backup-storage-account
+            extraVolumeMounts:
+              - name: storage-account
+                mountPath: /etc/wal-g.d/env
+          persistence:
+            size: "250Gi"
+          resources:
+            limits:
+              cpu: 2000m
+
+    elasticsearch:
+      data:
+        heapSize: 500m
+        pluginsInstall: "repository-gcs"
+      backup:
+        googleApplicationCreds:
+          secretName: backup-storage-account
+          fileName: db-service-account-private-key.json
+    indexer:
+      resources:
+        requests:
+          cpu: 100m
+          memory: 0
+      readSnapshots: false
+      makeSnapshots: false
+      elasticsearch:
+        useGcsSnapshots: true
+        gcsSnapshotBucket: "magda-es-snapshots-dev"
+        gcsSnapshotClient: "default"
+
+    web-server:
+      fallbackUrl: "https://data.gov.au"
+      featureFlags:
+        cataloguing: true
+        publishToDga: false
+        datasetApprovalWorkflowOn: false
+        useStorageApi: true
+
+    correspondence-api:
+      alwaysSendToDefaultRecipient: true
+      smtpHostname: "smtp.mailgun.org"
+      smtpPort: 2525
+
+# auth plugin for google
+magda-auth-google:
+  googleClientId: "569942545102-7nu303pchs9n2vlgl435trcb6vr51ged.apps.googleusercontent.com"
+
+magda-auth-arcgis:
+  arcgisClientId: "d0MgVUbbg5Z6vmWo"
+
+magda-auth-facebook:
+  clientId: "173073926555600"
